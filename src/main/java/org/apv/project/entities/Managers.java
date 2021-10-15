@@ -12,61 +12,55 @@ import lombok.Getter;
 import lombok.extern.java.Log;
 import lombok.extern.jbosslog.JBossLog;
 import lombok.extern.log4j.Log4j;
+import org.apv.project.credentials.Credentials;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 import java.util.Map;
 
 @ApplicationScoped
-@JBossLog
+@Log
 @Getter
 public class Managers {
-    private AzureProfile azureProfile;
-    private String subscriptionId;
-    private String tenantId;
-    private String clientId;
-    private String clientSecret;
+    @Inject
+    Credentials credentials;
+//    private AzureProfile azureProfile;
 
     public ComputeManager computeManager;
     public NetworkManager networkManager;
     public ResourceManager resourceManager;
 
-    @PostConstruct
-    public Managers getInstance(){
-        System.out.println
-                ("initiating managers");
-        subscriptionId = ConfigProvider.getConfig().getValue("AZURE.SUBSCRIPTION.ID",String.class);
-        tenantId = ConfigProvider.getConfig().getValue("AZURE.TENANT.ID",String.class);
-        clientId = ConfigProvider.getConfig().getValue("AZURE.CLIENT.ID",String.class);
-        clientSecret = ConfigProvider.getConfig().getValue("AZURE.CLIENT.SECRET",String.class);
-
-        System.out.println("subscriptionId : "+subscriptionId);
-        System.out.println("tenantId : "+tenantId);
-        System.out.println("clientId : "+clientId);
-
-        var map = Map.of("AZURE_CLIENT_ID", clientId, "AZURE_CLIENT_SECRET", clientSecret);
-        azureProfile=new AzureProfile(subscriptionId,tenantId,AzureEnvironment.AZURE);
-
-        var clientSecretCredential = new ClientSecretCredentialBuilder()
-                .clientId(clientId)
-                .clientSecret(clientSecret)
-                .tenantId(tenantId)
-                .build();
-
-        computeManager = ComputeManager.authenticate(
+    public ResourceManager getResourceManager(){
+        AzureProfile azureProfile= getAzureProfile();
+        ClientSecretCredential clientSecretCredential = getClientSecretCredentials();
+        return ResourceManager
+                .authenticate(clientSecretCredential, azureProfile)
+                .withSubscription(credentials.getSubscriptionId());
+    }
+    public NetworkManager getNeworkManager(){
+        AzureProfile azureProfile= getAzureProfile();
+        ClientSecretCredential clientSecretCredential = getClientSecretCredentials();
+        return NetworkManager
+                .authenticate(clientSecretCredential, azureProfile);
+    }
+    public ComputeManager getComputeManager(){
+        AzureProfile azureProfile= getAzureProfile();
+        ClientSecretCredential clientSecretCredential = getClientSecretCredentials();
+        return ComputeManager.authenticate(
                 clientSecretCredential,
                 azureProfile
         );
-        if (computeManager==null) System.out.println("compute manager null");
-        networkManager = NetworkManager
-                .authenticate(clientSecretCredential, azureProfile);
-        if (networkManager==null) System.out.println("network manager null");
-        resourceManager = ResourceManager
-                .authenticate(clientSecretCredential, azureProfile)
-                .withSubscription(subscriptionId);
-        if (resourceManager==null) System.out.println("resource manager null");
-        System.out.println("done initiating managers");
-        return this;
+    }
+    private AzureProfile getAzureProfile(){
+        return new AzureProfile(credentials.getTenantId(), credentials.getSubscriptionId(), AzureEnvironment.AZURE);
+    }
+    private ClientSecretCredential getClientSecretCredentials(){
+        return new ClientSecretCredentialBuilder()
+                .clientId(credentials.getClientId())
+                .clientSecret(credentials.getClientSecret())
+                .tenantId(credentials.getTenantId())
+                .build();
     }
 }

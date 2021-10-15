@@ -25,7 +25,7 @@ public class AzureResource {
     @GET
     public List<Printable> getAllResources(){
         return
-                managers.getInstance().getResourceManager()
+                managers.getResourceManager()
                         .genericResources()
                         .list()
                         .mapPage(rs -> new Printable(rs.name(), rs.id(), rs.type()))
@@ -35,7 +35,7 @@ public class AzureResource {
 
     @PUT
     public List<Printable> deleteResource(String id){
-        managers.getInstance().resourceManager.genericResources().deleteById(id);
+        managers.getResourceManager().genericResources().deleteById(id);
         return getAllResources();
     }
 }
