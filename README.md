@@ -1,4 +1,8 @@
 # apv-project
+Project for "***Architectures Paralleles et Virtualization***" course.
+Azure VM management (basic stuff).
+
+Made with **Quarkus** and **Azure SDK for Java**. 
 
 ## What You Will Need
 ### 1. create a service principal with azure cli
@@ -20,3 +24,50 @@ AZURE_SUBSCRIPTION_ID=xxxx-xxxxx-xxxxxx-xxxxx-xxxxxx
 ```shell script
 ./mvnw compile quarkus:dev
 ```
+
+### 5. fetch the endpoints
+````shell
+curl --location --request GET 'localhost:8080/azure'
+````
+## Endpoints
+### azure resources
+- list all resources
+````shell
+curl --location --request GET 'localhost:8080/azure'
+````
+which returns this structure
+````json
+[
+    {
+        "name": "resource-name",
+        "id": "resource-id",
+        "type": "resource-type"
+    },
+    {
+        "name": "nictest-vm92c488414",
+        "id": "/subscriptions/xxxx-xxxxx-xxxxx-xxxxx/resourceGroups/java-sdk-group/providers/Microsoft.Network/networkInterfaces/nictest-vmxxxxxx",
+        "type": "Microsoft.Network/networkInterfaces"
+    }
+]
+````
+- delete a resource
+````shell
+curl --location --request PUT 'localhost:8080/azure/' \
+--header 'Content-Type: text/plain' \
+--data-raw '<resource-id>'
+````
+### virtual machines specific
+- list all VMs : ````GET /azure/vm/````
+- get VM details : ````GET /azure/vm/details```` with vm-id as raw body, returns something similar to this : 
+````json
+{
+    "id": "07259d13-3773-xxxx-xxxx-xxxxxxxx",
+    "name": "test-vm",
+    "computerName": "test-vm",
+    "os": "Linux",
+    "size": "Standard_B1ls",
+    "status": "running"
+}
+````
+- deallocate a VM : ````PUT /azure/vm/deallocate```` with vm-id as raw body
+- create a VM : ````PUT /azure/vm/{vm-name}````

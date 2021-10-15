@@ -30,43 +30,36 @@ public class VMsResource {
     @GET
     @Path("/details")
     public VM getVmDetails(String vmId){
-        VirtualMachine vm = managers.getComputeManager().virtualMachines().getById(vmId);
-        VM n = new VM();
-        n.setId(vm.vmId());
-        n.setName(vm.name());
-        n.setComputerName(vm.computerName());
-        n.setOs(vm.osType().toString());
-//        n.setOsProfile();
-        n.setSize(vm.size().toString());
-        n.setStatus(vm.powerState().toString().split("/")[1]);
-        return n;
+        return VM.fromVirtualMachine(managers.getComputeManager().virtualMachines().getById(vmId));
     }
 
     @PUT
     @Path("/deallocate")
     public Response deallocateVm(String vmId){
         try{
-            managers.getComputeManager().virtualMachines().getById(vmId).deallocate();
+            ComputeManager manager = managers.getComputeManager();
+            manager.virtualMachines().getById(vmId).deallocate();
+            return Response.ok(VM.fromVirtualMachine(manager.virtualMachines().getById(vmId))).build();
         } catch(Exception e){
             return Response.serverError().build();
         }
-        return Response.ok().build();
     }
 
     @PUT
     @Path("/start")
     public Response startVm(String vmId){
         try{
-            managers.getComputeManager().virtualMachines().getById(vmId).start();
+            ComputeManager manager = managers.getComputeManager();
+            manager.virtualMachines().getById(vmId).start();
+            return Response.ok(VM.fromVirtualMachine(manager.virtualMachines().getById(vmId))).build();
         } catch(Exception e){
             return Response.serverError().build();
         }
-        return Response.ok().build();
     }
 
     @POST
     @Path("/{id}")
-    public Printable createVm(@PathParam("id") String vmName){
+    public VM createVm(@PathParam("id") String vmName){
         String RG_NAME="java-sdk-group";
         String PUB_SSH = credentials.getSshPubKey().get();
         VirtualMachine vm=  managers.getComputeManager().virtualMachines()
@@ -82,6 +75,6 @@ public class VMsResource {
                 .withSsh(PUB_SSH)
                 .withSize("Standard_B1ls")
                 .create();
-        return new Printable(vm.name(),vm.id(),vm.type());
+        return VM.fromVirtualMachine(vm);
     }
 }
